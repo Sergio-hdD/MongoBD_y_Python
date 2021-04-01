@@ -19,7 +19,7 @@ def mostrarDatos(tabla):
         baseDeDatos = cliente[DATA_BASE]
         coleccion = baseDeDatos[COLECCION]
         for documento in coleccion.find():
-            tabla.insert('', 0, text = documento["_id"], values = documento["nombre"] )  #El primer parámetro es un registro padre, en este caso no tienen (todos serán padres), segundo un indice y los demás los valores
+            tabla.insert('', 0, text = documento["_id"], values = (documento["nombre"], documento["sexo"], documento["calificacion"]) )  #El primer parámetro es un registro padre, en este caso no tienen (todos serán padres), segundo un indice y los demás los valores
         cliente.close() #Cierro la conexión
     except mg.errors.ServerSelectionTimeoutError as errorPorTiempo: #Si excede tiempo de espera de conexión 
         print("Error por tiempo: "+errorPorTiempo)
@@ -28,9 +28,11 @@ def mostrarDatos(tabla):
 #----------------Fin conexión (TRABAJANDO CON DATOS) al servidor---------------------
 
 ventana = Tk() #Creo una ventana
-tabla = ttk.Treeview(ventana, columns = 2) #Treeview es una tabla en forma de árbol pero la voy a usar comol tabla común (primer parámetro es dónde va a estar la tabla, el segundo parámetro es cantidad de columnas que quiero que tenga) 
-tabla.grid(row = 1, column = 0, columnspan = 2) #Creo una grila en la fila 1, columna 0 y que abarque 2 columnas
+tabla = ttk.Treeview(ventana, columns = ("#0", "#1", "#2", "#3")) #Treeview es una tabla en forma de árbol pero la voy a usar comol tabla común (primer parámetro es dónde va a estar la tabla, el segundo parámetro es cantidad de columnas que quiero que tenga) 
+tabla.grid(row = 1, column = 0, columnspan = 4) #Creo una grila en la fila 1, columna 0 y que abarque 2 columnas
 tabla.heading("#0",text = "ID") # la cabecera en la posición 0 va a ser ID 
 tabla.heading("#1",text = "Nombre")
+tabla.heading("#2",text = "Sexo")
+tabla.heading("#3",text = "Calificación")
 mostrarDatos(tabla)
 ventana.mainloop() #Ciclo principal
