@@ -76,6 +76,21 @@ def editarDocumentoAlumno():
     limparPantalla() #Saco lo que se estaba mostrando en la tabla
     mostrarDatos() #Recargo para ver tambien lo último agregado 
     editar["state"] = "disabled" #cuando se de clic en el botón editar (es como llega acá) el estado del botón editar será disabled
+    borrar["state"] = "disabled"
+    agregar["state"] = "normal"
+
+def borrarDocumentoAlumno():
+    global ID_ALUMNO #Lo declaro global para que entre acá y la inicializo más arriba como string vacío para poder usarla en otros lados
+    try:
+        idBuscar = {"_id": ObjectId(ID_ALUMNO)}
+        coleccion.delete_one(idBuscar) #Busca en la BD por idBuscar y lo borra
+        limpiarInputs()
+    except mg.errors.ConnectionFailure as errorDeConexion: #Si no se puede conectar
+        print("Fallo de conexión al intentar eliminar: "+errorDeConexion)
+    limparPantalla() #Saco lo que se estaba mostrando en la tabla
+    mostrarDatos() #Recargo para ver tambien lo último agregado 
+    borrar["state"] = "disabled" #cuando se de clic en el botón editar (es como llega acá) el estado del botón editar será disabled
+    editar["state"] = "disabled"
     agregar["state"] = "normal"
 
 def dobleClicTabla(envent):
@@ -91,6 +106,7 @@ def dobleClicTabla(envent):
     calificacion.insert(0,documento["calificacion"])
     agregar["state"] = "disabled" #cuando se de doble clic en la tabla (es como llega acá) el estado del botón agregar será disabled
     editar["state"] = "normal"
+    borrar["state"] = "normal"
 
 ventana = Tk() #Creo una ventana
 tabla = ttk.Treeview(ventana, columns = 2) #Treeview es una tabla en forma de árbol pero la voy a usar comol tabla común (primer parámetro es dónde va a estar la tabla, el segundo parámetro es cantidad de columnas que quiero que tenga) 
@@ -115,6 +131,11 @@ agregar.grid(row = 5, columnspan = 2)
 editar = Button(ventana,text = "Editar alumno", command = editarDocumentoAlumno, bg = "yellow") 
 editar.grid(row = 6, columnspan = 2) 
 editar["state"] = "disabled" #El botón arranca en estado disabled
+
+#Botón borrar 
+borrar = Button(ventana,text = "Borrar alumno", command = borrarDocumentoAlumno, bg = "red", fg = "white") 
+borrar.grid(row = 7, columnspan = 2)
+borrar["state"] = "disabled" #El botón arranca en estado disabled
 
 mostrarDatos()
 ventana.mainloop() #Ciclo principal
