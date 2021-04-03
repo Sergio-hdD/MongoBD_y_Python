@@ -14,6 +14,9 @@ DATA_BASE = "escuela"
 COLECCION = "alumnos"
 ID_ALUMNO = ""
 
+botonVerTodos = None
+
+
 #NOTA: (documento en mongo = registro en tabla tkinter)
 
 #------------------Conexión al servidor-----------------------
@@ -51,7 +54,7 @@ def buscarDocumentoAlumno():
 # OPCIÓN 2
 def mostrarDatos(objetoABuscar = {}): #Al ponerlo así el parámetro es opcional, es decir si en algún lado no se lo pasa no tira error y estará vacio 
     for documento in coleccion.find(objetoABuscar): #Si el objetoABuscar llegara vacío, el find buscaría sin tener en cuenta algún criterio (traería todo)
-        tabla.insert('', 0, text = documento["_id"], values = documento["nombre"] )  #El primer parámetro es un registro padre, en este caso no tienen (todos serán padres), segundo un indice y los demás los valores
+        tabla.insert('', 0, text = documento["_id"], values = (documento["nombre"], documento["sexo"], documento["calificacion"]) )  #El primer parámetro es un registro padre, en este caso no tienen (todos serán padres), segundo un indice y los demás los valores
     cliente.close() #Cierro la conexión
 
 def buscarDocumentoAlumno():
@@ -68,11 +71,25 @@ def buscarDocumentoAlumno():
     
     if objetoABuscar == {} : #Si todos los campos de texto están vacíos
         messagebox.showerror(message = "Debe ingresar al menos un dato para la búsqueda")
-    else: #Si se ingresa al menos un criterio de busqueda    
+    else: #Si se ingresa al menos un criterio de busqueda     
         limparPantalla()
         mostrarDatos(objetoABuscar)
+        global botonVerTodos #Lo declaro global para que entre acá y la inicializo más arriba None para poder usarla en "traerTodosLosDocumentosAlumnos()" para ocultar este botón    
+        botonVerTodos = Button(ventana,text = "Ver todos los alumnos", command = traerTodosLosDocumentosAlumnos, bg = "green", fg = "brown", bd=8, width=45, font="Verdana")
+        botonVerTodos.grid(row = 12, columnspan = 2, sticky = E)
+        return 0
 #FIN OPCIÓN 2
 
+
+def traerTodosLosDocumentosAlumnos():
+    limpiarInputsBuscar()
+    limparPantalla()
+    mostrarDatos()
+    #Si no usaba una variable global no me dejaba ocultar el botón ya que lo creo en una función interna
+    global botonVerTodos #Lo declaro global y la inicializo más arriba None luego la cargo (en "buscarDocumentoAlumno()" )con el botón para poder usarla acá para ocultar este botón
+    botonVerTodos.grid_forget() #grid_forget() oculta el boton, destroy() lo borra, también pack_forget() lo oculta pero debe usarse así "command=lambda: self.label.pack_forget()" (sin comillas) en los parámetros de un botón que lo active  
+    return 0
+    
 def limparPantalla():
     for registro in tabla.get_children():
         tabla.delete( registro )  #Borro cada registro que se está mostrando en la tabla
@@ -83,6 +100,11 @@ def crearInputAndLabel(texto, labelRow, labelColumn, campoTextoRow, campoTextoCo
     varEntry = Entry(ventana) #Va a estar en la ventana
     varEntry.grid(row = campoTextoRow, column = campoTextoColumn, sticky = W+E) # La posisión del input
     return varEntry
+
+def limpiarInputsBuscar(): #Saca de los input que fueron usados para buscar al tocar el boton 
+    buscarPorNombre.delete(0, END) #Borra el input de inicio a fin
+    buscarPorSexo.delete(0, END)
+    buscarPorCalificacion.delete(0, END)
 
 def limpiarInputs(): #Saca de los input que fueron agregados al tocar el boton "Agregar alumno" 
     nombre.delete(0, END) #Borra el input de inicio a fin
@@ -99,6 +121,7 @@ def agregarDocumentoAlumno():
             print("Fallo de conexión al intentar insertar: "+errorDeConexion)
     else:
         messagebox.showerror(message = "No puede haber campos vacios")
+    limpiarInputs()    
     limparPantalla() #Saco lo que se estaba mostrando en la tabla
     mostrarDatos() #Recargo para ver tambien lo último agregado
 
@@ -149,11 +172,30 @@ def dobleClicTabla(envent):
     editar["state"] = "normal"
     borrar["state"] = "normal"
 
+
+# Evento de cierre de interfaz
+def close_window():
+    if messagebox.askokcancel("Salir", "Va a salir de la aplicación"):
+        ventana.destroy()
+
+
+
 ventana = Tk() #Creo una ventana
-tabla = ttk.Treeview(ventana, columns = 2) #Treeview es una tabla en forma de árbol pero la voy a usar comol tabla común (primer parámetro es dónde va a estar la tabla, el segundo parámetro es cantidad de columnas que quiero que tenga) 
+#ventana.geometry("900x520")  # tamaño de la ventana: en este caso no me sirve darle tamaño fijo ya que se agregan o se esconde un botón 
+# anula la opción de máximizar y de cambiar el tamaño arrastrando con el puntero del mouse
+ventana.resizable(width=0, height=0)
+ventana.configure(background="lawn green")  # fondo de color sólido
+ventana.title("Primer ABM con mongoBD")  # título
+# ventana.iconbitmap("/Icono.ico")  # ícono
+# si se preciona la "X" para cerrar la app, llamo a close_window que pide confirmar
+ventana.protocol("WM_DELETE_WINDOW", close_window)
+
+tabla = ttk.Treeview(ventana, columns = ("#1", "#2", "#3")) #(Especifico el identificador de cada header [salvo el primero que se agrega solo]) Treeview es una tabla en forma de árbol pero la voy a usar comol tabla común (primer parámetro es dónde va a estar la tabla, el segundo parámetro es cantidad de columnas que quiero que tenga) 
 tabla.grid(row = 1, column = 0, columnspan = 2) #Creo una grila en la fila 1, columna 0 y que abarque 2 columnas
 tabla.heading("#0",text = "ID") # la cabecera en la posición 0 va a ser ID 
-tabla.heading("#1",text = "Nombre")
+tabla.heading("#1",text = "Nombre", anchor = W)
+tabla.heading("#2",text = "Sexo", anchor = W)
+tabla.heading("#3",text = "Calificación", anchor = W)
 tabla.bind("<Double-Button-1>", dobleClicTabla) #Cuando se da doble clic llama a la función, <Button-1> para 1 clic y <Double-Button-1> para doble clic, (con el 1 toma el botón izquierdo del mouse, <Button-2> el derecho y <Button-3> el scroll)
 #Hecho con doble clic ya que si lo hago con un clic, por ejemplo si tengo A y B, al hacer clic en A y luego clic en B toma el valor pero de A (es decir en el segundo clic tama el primero)... pidiendo doble clic para elegir, se evita esto
 
@@ -166,16 +208,16 @@ sexo = crearInputAndLabel("Sexo", 3, 0, 3, 1)
 calificacion = crearInputAndLabel("Calificación", 4, 0, 4, 1)
 
 #Botón agregar
-agregar = Button(ventana,text = "Agregar alumno", command = agregarDocumentoAlumno, bg = "green", fg = "white") #Command llama a la función al tocar el botón, bg es el fondo, fg la letra 
+agregar = Button(ventana,text = "Agregar alumno", command = agregarDocumentoAlumno, bg = "green", fg = "white", bd=8, font="Verdana") #Command llama a la función al tocar el botón, bg es el fondo, fg la letra 
 agregar.grid(row = 5, columnspan = 2, sticky = W+E) #sticky = W+E, que abarque todo de izquierda a derecha   
 
 #Botón editar 
-editar = Button(ventana,text = "Editar alumno", command = editarDocumentoAlumno, bg = "yellow") 
+editar = Button(ventana,text = "Editar alumno", command = editarDocumentoAlumno, bg = "yellow", bd=8, font="Verdana") 
 editar.grid(row = 6, columnspan = 2, sticky = W+E) 
 editar["state"] = "disabled" #El botón arranca en estado disabled
 
 #Botón borrar 
-borrar = Button(ventana,text = "Borrar alumno", command = borrarDocumentoAlumno, bg = "red", fg = "white") 
+borrar = Button(ventana,text = "Borrar alumno", command = borrarDocumentoAlumno, bg = "red", fg = "white", bd=8, font="Verdana") 
 borrar.grid(row = 7, columnspan = 2, sticky = W+E)
 borrar["state"] = "disabled" #El botón arranca en estado disabled
 
@@ -186,7 +228,7 @@ buscarPorSexo = crearInputAndLabel("Buscar por sexo", 9, 0, 9, 1)
 #Buscar por calificación
 buscarPorCalificacion = crearInputAndLabel("Buscar por calificación", 10, 0, 10, 1)
 #Botón buscar 
-buscar = Button(ventana,text = "Buscar alumno", command = buscarDocumentoAlumno, bg = "blue", fg = "white") 
+buscar = Button(ventana,text = "Buscar alumno", command = buscarDocumentoAlumno, bg = "blue", fg = "white", bd=8, font="Verdana") 
 buscar.grid(row = 11, columnspan = 2, sticky = W+E) 
 
 mostrarDatos()
